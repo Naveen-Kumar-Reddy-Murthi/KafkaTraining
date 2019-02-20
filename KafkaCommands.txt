@@ -1,0 +1,63 @@
+
+start zookeeper service
+
+bin\windows\zookeeper-server-start.bat config\zookeeper.properties
+
+starting kafka server 
+
+bin\windows\kafka-server-start.bat config\server.properties
+
+List all kafka topics
+
+D:\Software\kafka_2.12-2.1.0\kafka_2.12-2.1.0\bin\windows>kafka-topics.bat --list --zookeeper localhost:2181
+
+
+consumer creation
+
+kafka-console-consumer.bat --topic emp-topic --bootstrap-server localhost:9092
+
+
+bin\windows\zookeeper-server-start.bat config/zookeeper.properties
+
+bin\windows\kafka-server-start.bat config/server.properties
+
+.\kafka-topics.bat --create --topic first-topic --partitions 2 --replication-factor 1 --zookeeper localhost:2181
+Created topic "first-topic".
+
+
+kafka-topics --list --zookeeper localhost:2181
+
+kafka-console-consumer.bat --topic first-topic --bootstrap-server localhost:9092
+
+kafka-console-producer.bat --topic first-topic --bootstrap-server localhost:9092
+
+kafka-console-consumer.bat --topic first-topic --bootstrap-server DESKTOP-KNPOHMJ:9092
+
+
+kafka-console-producer.bat --broker-list localhost:9092 --topic first-topic
+
+
+kafka-console-producer.bat --broker-list localhost:9092 --topic emp-topic
+
+kafka-console-consumer.bat --topic emp-topic --bootstrap-server localhost:9092
+
+
+kafka-topics.bat --create --topic emp-four-topic --partitions 4 --replication-factor 1 --zookeeper localhost:2181
+
+kafka-console-consumer.bat --topic emp-four-topic --bootstrap-server localhost:9092
+
+
+
+
+192.168.18.9
+
+https://paste.ubuntu.com/p/SWq9XfFSb6/
+
+1. create a topic 3 partitions
+2. run 2 instances of reciever
+3. send messages with three different keys
+
+kafka-topics.bat --create --topic three-part-topic --partitions 3 --replication-factor 1 --zookeeper localhost:2181
+
+kafka-topics.bat --create --topic msg-topic --partitions 4 --replication-factor 1 --zookeeper localhost:2181
+
