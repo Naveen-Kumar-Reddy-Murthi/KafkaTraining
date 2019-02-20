@@ -1,2 +1,29 @@
 
+kafka-topics.bat --create --topic test-cluster-topic --partitions 4 --replication-factor 3 --zookeeper localhost:2181
+
+kafka-topics.bat --describe test-cluster-topic --zookeeper localhost:2181
+
+kafka-topics.bat --create --topic test1-cluster-topic --partitions 4 --replication-factor 2 --zookeeper localhost:2181
+
+kafka-topics.bat --describe test1-cluster-topic --zookeeper localhost:2181
+
+kafka-console-consumer.bat --topic test-cluster-topic1 --bootstrap-server localhost:9091,localhost:9092,localhost:9093 
+
+kafka-console-producer.bat --topic test1-cluster-topic --broker-list localhost:9091,localhost:9092,localhost:9093
+
+
+kafka-console-consumer.bat --topic test-cluster-topic1 --bootstrap-server localhost:9091,localhost:9092,localhost:9093 --consumer-property group.id=test-group
+
+kafka-console-consumer.bat --topic test1-cluster-topic --bootstrap-server localhost:9091,localhost:9092,localhost:9093
+
+kafka-console-producer.bat --topic test1-cluster-topic --broker-list localhost:9091,localhost:9092,localhost:9093
+
+
+kafka-console-consumer.bat --topic test1-cluster-topic --bootstrap-server localhost:9091,localhost:9092,localhost:9093 --consumer-property group.id=test-group
+
+
+kafka-console-producer.bat --topic test1-cluster-topic --broker-list localhost:9091,localhost:9092,localhost:9093
+
+
+
 

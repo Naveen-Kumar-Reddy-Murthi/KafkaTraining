@@ -1,0 +1,159 @@
+[kafka@localhost confluent-5.1.0]$ pwd
+/home/kafka/Desktop/Kafka/confluent-5.1.0
+[kafka@localhost confluent-5.1.0]$ cd bin
+[kafka@localhost bin]$ sudo ./confluent start
+[sudo] password for kafka: 
+This CLI is intended for development only, not for production
+https://docs.confluent.io/current/cli/index.html
+
+Using CONFLUENT_CURRENT: /tmp/confluent.WKf09EWS
+Starting zookeeper
+zookeeper is [UP]
+Starting kafka
+kafka is [UP]
+Starting schema-registry
+schema-registry is [UP]
+Starting kafka-rest
+kafka-rest is [UP]
+Starting connect
+connect is [UP]
+Starting ksql-server
+ksql-server is [UP]
+Starting control-center
+control-center is [UP]
+[kafka@localhost bin]$ 
+
+
+[kafka@localhost bin]$ sudo ./confluent stop
+
+[kafka@localhost bin]$ sudo ./confluent start schema-registry
+
+Download mysql connector from 
+https://dev.mysql.com/downloads/file/?id=480090
+
+extract zip and Copy the jar mysql file  mysql-connector-java-5.1.47-bin.jar to the directory 
+
+/home/kafka/Desktop/Kafka/confluent-5.1.0/share/java
+
+goto following directory and create new property file
+
+/home/kafka/Desktop/Kafka/confluent-5.1.0/etc
+
+Create a new Properties file : mysql-source.properties
+
+add following properties:
+
+name=test-source-mysql-jdbc-autoincrement
+connection.url=jdbc:mysql://192.168.18.65:3306/testkafkadb?user=root&password=pwd
+mode=incrementing
+incrementing.column.name=empid
+topic.prefix=topic-mysql-
+
+sudo bin/connect-standalone etc/schema-registry/connect-avro-standalone.properties etc/kafka-connect-jdbc/mysql-source.properties
+
+
+sudo ./kafka-avro-console-consumer --topic topic-mysql-employee --bootstrap-server localhost:9092 --from-beginning
+
+keep inserting records into employee table from mysql console, inserted records should reflect in consumer terminal
+
+
+
+=======================================================================================================================
+
+
+
+Cassandra sink connector steps.
+
+In linux, download cassandra from 
+http://www.apache.org/dyn/closer.lua/cassandra/3.11.4/apache-cassandra-3.11.4-bin.tar.gz
+
+Also download kafka cassandra connector from 
+https://github.com/Landoop/stream-reactor/releases 
+download name kafka-connect-cassandra-1.2.1-2.1.0-all.tar.gz
+
+extract the zip and paste the kafka-connect-cassandra-1.2.1-2.1.0-all.jar  into /home/kafka/Desktop/Kafka/confluent-5.1.0/share/java/kafka-connect-jdbc
+
+extract downloaded cassandra db zip file
+
+open terminal and change directory to bin in the extraced folder and run the following command
+
+[kafka@localhost bin]$ sudo ./cassandra
+
+now cassandra db server is started
+
+open another terminal in bin directory and run the following command
+
+[kafka@localhost bin]$ ./cqlsh
+
+then
+
+cqlsh> create keyspace testkeyspace with replication={'class':'SimpleStrategy', 'replication_factor':1};
+cqlsh> use testkeyspace;
+
+then
+
+cqlsh:testkeyspace> create table employee(empid int primary key, emp_name text, designation text);
+
+cqlsh:testkeyspace> desc tables;
+
+
+then goto  /home/kafka/Desktop/Kafka/confluent-5.1.0/etc/kafka-connect-jdbc
+
+copy and pase sink-quickstart-sqlite.properties and rename it to cassandra-sink.properties
+
+open the following link
+https://www.confluent.io/blog/kafka-connect-cassandra-sink-the-perfect-match/
+
+Now search on web page for "why kcql" using cntrl+f and copy all the cassandra related propreties/ below properties
+
+connector.class=com.datamountaineer.streamreactor.connect.cassandra.sink.CassandraSinkConnector
+tasks.max=1
+topics=orders-topic
+connect.cassandra.export.route.query=INSERT INTO orders SELECT * FROM orders-topic
+connect.cassandra.contact.points=localhost
+connect.cassandra.port=9042
+connect.cassandra.key.space=demo
+connect.cassandra.username=cassandra
+connect.cassandra.password=cassandra
+
+final properties should look like below
+
+name=test-sink-cassandra
+connector.class=com.datamountaineer.streamreactor.connect.cassandra.sink.CassandraSinkConnector
+tasks.max=1
+topics=topic-mysql-employee
+#connect.cassandra.export.route.query=INSERT INTO orders SELECT * FROM orders-topic
+connect.cassandra.kcql=insert into employee select * from topic-mysql-employee
+connect.cassandra.contact.points=localhost
+connect.cassandra.port=9042
+connect.cassandra.key.space=testkeyspace
+connect.cassandra.username=cassandra
+connect.cassandra.password=cassandra
+
+Now terminate the mysql-connector terminal executed using below command
+sudo bin/connect-standalone etc/schema-registry/connect-avro-standalone.properties etc/kafka-connect-jdbc/mysql-source.properties
+
+Now run the following command to start cassandra connector console
+
+sudo bin/connect-standalone etc/schema-registry/connect-avro-standalone.properties etc/kafka-connect-jdbc/mysql-source.properties etc/kafka-connect-jdbc/cassandra-sink.properties
+
+now here both mysql connector and cassandra connectors are running in sync
+
+Now run select * from employee on cassandra db client to verify the insertion of records from topic-mysql-employee topic where were inserted from mysql table using mysql connector
+
+now here both mysql connector and cassandra connectors are running in sync
+
+
+Note: If the column names of topic and destination db table are different then we need to change the following property in
+cassandra-sink.properties as below
+
+connect.cassandra.kcql=insert into employee_test select emp_id as id,emp_name as name,designation as designation from topic-mysql-employee
+
+
+
+
+
+
+
+
+
