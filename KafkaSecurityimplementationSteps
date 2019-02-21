@@ -1,0 +1,73 @@
+1. clear temp directory which has topic logs and messages
+2. Go to kafka\config and copy and paste server.properties file and rename it to server-sasl.properties
+3. Append the below properties to that file
+   
+    listeners=SASL_PLAINTEXT://localhost:9092
+	security.inter.broker.protocol=SASL_PLAINTEXT
+	sasl.mechanism.inter.broker.protocol=PLAIN
+	sasl.enabled.mechanisms=PLAIN
+	
+4. Now we need to created some and users and their credentials using JAAS(Java authorization and athentication service)
+   create new property file named jaas.conf inside config directory and below entry
+   
+		 KafkaServer {
+		   org.apache.kafka.common.security.plain.PlainLoginModule required
+		   username="admin"
+		   password="admin-secret"
+		   user_admin="admin-secret"
+		   user_alice="alice-secret"
+		   user_naveen="naveen-password //username-password key value pair
+		};
+		
+5. To enable sasl, we need to run kafka with this configuration by passing it as system property like below
+		-Djava.security.auth.login.config=config/jaas.config
+    1. First start the zookeeper using "bin\windows\zookeeper-server-start.bat config\zookeeper.properties" command
+	2. Now set below envrionment variable before starting kafka server using following command
+	   
+	      set KAFKA_OPTS=-Djava.security.auth.login.config=config/jaas.conf
+		  
+	   KAFKA_OPTS is an environment variable understood by kafka as it is read during the start up
+	   
+	3. Now start the kafka server using following command
+	   
+	    bin\windows\kafka-server-start.bat config\server-sasl.properties
+		
+6. Now refer add the sender and reciever code under kafka.day4.t1.authentication package in KafkaTraining project
+   Below two properties must be set inorder to enable the authenticaiton
+   
+     properties.setProperty("security.protocol", "SASL_PLAINTEXT");
+		properties.setProperty("sasl.mechanism","PLAIN");
+
+7. add the file named client-jaas.conf and below entry to it
+
+			KafkaClient {
+		  org.apache.kafka.common.security.plain.PlainLoginModule required
+		  username="alice"
+		  password="alice-secret";
+		};
+  
+6. Now if you run the sender you will get the following exception. Because you haven't passed the client auth config to   
+   jvm    
+	
+				Exception in thread "main" org.apache.kafka.common.KafkaException: Failed to construct kafka producer
+				at org.apache.kafka.clients.producer.KafkaProducer.<init>(KafkaProducer.java:431)
+				at org.apache.kafka.clients.producer.KafkaProducer.<init>(KafkaProducer.java:301)
+				at kafka.day4.t1.authentication.MessageSender.main(MessageSender.java:28)
+			Caused by: java.lang.IllegalArgumentException: Could not find a 'KafkaClient' entry in the JAAS configuration. System property 'java.security.auth.login.config' is not set
+				at org.apache.kafka.common.security.JaasContext.defaultContext(JaasContext.java:133)
+				at org.apache.kafka.common.security.JaasContext.load(JaasContext.java:98)
+				at org.apache.kafka.common.security.JaasContext.loadClientContext(JaasContext.java:84)
+				at org.apache.kafka.common.network.ChannelBuilders.create(ChannelBuilders.java:119)
+				at org.apache.kafka.common.network.ChannelBuilders.clientChannelBuilder(ChannelBuilders.java:65)
+				at org.apache.kafka.clients.ClientUtils.createChannelBuilder(ClientUtils.java:108)
+				at org.apache.kafka.clients.producer.KafkaProducer.newSender(KafkaProducer.java:439)
+				at org.apache.kafka.clients.producer.KafkaProducer.<init>(KafkaProducer.java:420)
+				... 2 more
+
+7. Now pass the client-jaas.conf file as a system property by running java program with configuration
+   Add the following entry in vm arguments and run. This step should be used for both sender and reciever
+   
+      -Djava.security.auth.login.config=client-jaas.conf
+	  
+8. 
+   
