@@ -149,7 +149,69 @@ cassandra-sink.properties as below
 
 connect.cassandra.kcql=insert into employee_test select emp_id as id,emp_name as name,designation as designation from topic-mysql-employee
 
+======================================================================================
+sudo bin/connect-standalone etc/schema-registry/connect-avro-standalone.properties etc/kafka-connect-jdbc/cassandra-source.properties etc/kafka-connect-jdbc/mysql-sink.
 
+=========================================================================================
+
+
+Steps for pushing records from cassandra to a topic using cassandra connector
+===============================================================================
+
+1. We already have required connectors i.e., both mysql and cassandra as destination and source respectively
+2. create cassandra-source.properties under /home/kafka/Desktop/Kafka/confluent-5.1./etc/kafka-connect-jdbc and 
+    below properties to the file
+    
+    name=cassandra-source-orders
+    connector.class=com.datamountaineer.streamreactor.connect.cassandra.source.CassandraSourceConnector
+    tasks.max=1
+    connect.cassandra.contact.points=localhost
+    connect.cassandra.port=9042
+    connect.cassandra.key.space=testkeyspace
+    connect.cassandra.username=cassandra
+    connect.cassandra.password=cassandra
+    connect.cassandra.kcql=INSERT INTO ordersTopic SELECT * FROM orders  PK created INCREMENTALMODE=TIMEUUID  
+
+3. Create a new table in cassandra using following command
+
+     create table orders (id int, created timeuuid, product text, qty int, price float, PRIMARY KEY (id, created));
+     INSERT INTO orders (id, created, product, qty, price) VALUES (1, now(), 'test-product1', 100, 94.2);
+     
+4. Now open a avro consumer to check on the topic whether it is recieving the records. Run the following command in confluence\bin     
+   directory
+   
+   sudo ./kafka-avro-console-consumer --topic ordersTopic --bootstrap-server localhost:9092 --from-beginning
+   
+5. We should be able to recieve the existing and new db records upon inserting in the cassandra database
+
+Steps to persists records from ordersTopic to a remote mysql database
+=====================================================================
+
+1. Follow the above five steps
+2. create confluent-5.1.0/etc/kafka-connect-jdbc/mysql-sink.properties and add the following properties to it
+ 
+    name=orders-sink-mysql
+    connector.class=io.confluent.connect.jdbc.JdbcSinkConnector
+    tasks.max=1
+    connection.url=jdbc:mysql://192.168.18.65:3306/testkafkadb?user=root&password=pwd
+    auto.create=true
+    topics=ordersTopic
+    
+3. Run the following command in confluence base directory
+
+   sudo bin/connect-standalone etc/schema-registry/connect-avro-standalone.properties 
+   etc/kafka-connect-jdbc/cassandra-source.properties etc/kafka-connect-jdbc/mysql-sink.properties >/home/kafka/Desktop   
+   /kafka.log 
+   
+   now whenever new record is inserted in cassandra db, that record will be inserted into the topic which we provided    in cassandra-source.properties i.e., "ordersTopic" by cassandra-source connector then from there mysql-sink connector will pick each record from that topic and it will insert into remoted mysql db.
+   
+   Check mysql table if new records are being inserted after inserting into cassandra.
+   
+   Note: Since we have added auto.create=true in mysql-sink.proeprties, mysql-sink connector will autormatically create the table based on the columns in the ordersTopic WRT mysql 
+   
+   
+   below command is used to check the connector processor is running or not.  
+   ps -ef| grep connectors
 
 
 
